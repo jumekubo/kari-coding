@@ -8,7 +8,7 @@ led.direction = digitalio.Direction.OUTPUT
 
 # One Morse timing unit is 0.2 seconds.
 UNIT = 0.2
-MESSAGE = "KARINA"
+MESSAGE = "JOHN"
 
 # Full Morse alphabet, kept as a dictionary for easy lookup.
 MORSE = {

@@ -1,4 +1,4 @@
-# Morse LED Simulator
+# Python Morse Lab
 
 This project demonstrates how Morse-code timing maps to an LED controlled by CircuitPython.
 

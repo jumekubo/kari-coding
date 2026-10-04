@@ -1,24 +1,24 @@
-# Kari Coding
+# Python Coding
 
-A growing collection of coding experiments and learning projects for Kari and family.
+A growing collection of approachable Python and physical-computing projects.
 
 ## Live website
 
-[Open the Kari Coding project hub](https://jumekubo.github.io/kari-coding/)
+[Open the Python Coding project hub](https://jumekubo.github.io/python-coding/)
 
 ## Projects
 
-### Morse LED simulator
+### Python Morse Lab
 
-An interactive browser project that translates a message into Morse code, blinks a virtual LED, and generates matching CircuitPython code for Kari's Raspberry Pi Pico setup.
+An interactive browser project that translates a message into Morse code, blinks a virtual LED, and generates matching CircuitPython code for a Raspberry Pi Pico-family board.
 
-Open `projects/morse-led/index.html` locally, or [open the live Morse LED simulator](https://jumekubo.github.io/kari-coding/projects/morse-led/). No installation or build step is needed.
+Open `projects/python-morse-lab/index.html` locally, or [open Python Morse Lab](https://jumekubo.github.io/python-coding/projects/python-morse-lab/). No installation or build step is needed.
 
 Future projects can live alongside it:
 
 ```text
 projects/
-├── morse-led/
+├── python-morse-lab/
 ├── rgb-led/
 ├── sensors/
 ├── p5js/
@@ -27,7 +27,7 @@ projects/
 
 ## Moving a project to the Pico
 
-Save CircuitPython programs as `code.py` on the board's `CIRCUITPY` drive. The Morse project uses an external LED on `board.GP14`, matching Kari's current sketch.
+Save CircuitPython programs as `code.py` on the board's `CIRCUITPY` drive. Python Morse Lab uses an external LED on `board.GP14`.
 
 ## Hardware safety
 

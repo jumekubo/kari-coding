@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore Morse code with a virtual LED and see the matching CircuitPython program.">
-  <title>Kari's Morse Lab</title>
+  <title>Python Morse Lab</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Ccircle cx='22' cy='32' r='8' fill='%23f8df72'/%3E%3Crect x='36' y='28' width='18' height='8' rx='4' fill='%235eead4'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -502,7 +502,7 @@
     <header>
       <div>
         <p class="eyebrow">CircuitPython playground</p>
-        <h1>Kari's Morse Lab</h1>
+        <h1>Python Morse Lab</h1>
       </div>
       <p class="header-note">See how dots, dashes, and pauses become a blinking LED—before connecting a single wire.</p>
     </header>
@@ -519,7 +519,7 @@
         </div>
 
         <div class="now-playing">
-          <span class="current-letter" id="currentLetter">KARINA</span>
+          <span class="current-letter" id="currentLetter">JOHN</span>
           <span class="current-symbol" id="currentSymbol">Press Start</span>
         </div>
       </article>
@@ -527,7 +527,7 @@
       <aside class="card controls">
         <div class="field">
           <label for="message">Message</label>
-          <input id="message" type="text" value="KARINA" maxlength="24" autocomplete="off" spellcheck="false">
+          <input id="message" type="text" value="JOHN" maxlength="24" autocomplete="off" spellcheck="false">
         </div>
 
         <div>
@@ -545,7 +545,7 @@
 
         <div>
           <p class="eyebrow">Translation</p>
-          <div class="translation" id="translation" aria-live="polite">-.- &nbsp; .- &nbsp; .-. &nbsp; .. &nbsp; -. &nbsp; .-</div>
+          <div class="translation" id="translation" aria-live="polite">.--- &nbsp; --- &nbsp; .... &nbsp; -.</div>
         </div>
 
         <div class="legend" aria-label="Timing legend">
@@ -706,7 +706,7 @@
     }
 
     function generatedCode() {
-      const message = cleanMessage(messageInput.value).trim() || 'KARINA';
+      const message = cleanMessage(messageInput.value).trim() || 'JOHN';
       return `import time
 import board
 import digitalio
