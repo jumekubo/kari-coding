@@ -580,7 +580,7 @@
       <article class="card code-card">
         <div class="code-head">
           <div>
-            <p class="eyebrow">Pico version</p>
+            <p class="eyebrow">Beginner Pico version</p>
             <h2>Matching CircuitPython</h2>
           </div>
           <button class="copy-button" id="copyButton" type="button">Copy code</button>
@@ -725,30 +725,45 @@ MORSE = {
     "M": "--", "N": "-.", "O": "---", "P": ".--.",
     "Q": "--.-", "R": ".-.", "S": "...", "T": "-",
     "U": "..-", "V": "...-", "W": ".--", "X": "-..-",
-    "Y": "-.--", "Z": "--.."
+    "Y": "-.--", "Z": "--..",
+    "0": "-----", "1": ".----", "2": "..---", "3": "...--",
+    "4": "....-", "5": ".....", "6": "-....", "7": "--...",
+    "8": "---..", "9": "----."
 }
 
 def flash(symbol):
     led.value = True
-    time.sleep(UNIT if symbol == "." else 3 * UNIT)
+
+    if symbol == ".":
+        time.sleep(UNIT)
+    else:
+        time.sleep(3 * UNIT)
+
     led.value = False
 
-def send_word(word):
-    for letter_index, letter in enumerate(word):
-        pattern = MORSE[letter]
-        for symbol_index, symbol in enumerate(pattern):
-            flash(symbol)
-            if symbol_index < len(pattern) - 1:
+def send_message(message):
+    for letter in message:
+        if letter == " ":
+            # The previous letter already supplied 3 off-units.
+            # Four more creates the 7-unit gap between words.
+            time.sleep(4 * UNIT)
+        else:
+            pattern = MORSE[letter]
+
+            for symbol in pattern:
+                flash(symbol)
                 time.sleep(UNIT)
-        if letter_index < len(word) - 1:
-            time.sleep(3 * UNIT)
+
+            # The last symbol supplied 1 off-unit.
+            # Two more creates the 3-unit gap between letters.
+            time.sleep(2 * UNIT)
 
 while True:
-    for word_index, word in enumerate(MESSAGE.split()):
-        send_word(word)
-        if word_index < len(MESSAGE.split()) - 1:
-            time.sleep(7 * UNIT)
-    time.sleep(7 * UNIT)`;
+    send_message(MESSAGE)
+
+    # The last letter supplied 3 off-units.
+    # Four more creates a 7-unit gap before repeating.
+    time.sleep(4 * UNIT)`;
     }
 
     function updateContent() {
