@@ -568,7 +568,7 @@
     <section class="learning-grid">
       <article class="card explain">
         <p class="eyebrow">How it maps to hardware</p>
-        <h2>The simulator and Nano use the same timing</h2>
+        <h2>The simulator and Pico use the same timing</h2>
         <p>The browser changes a circle from dark to bright. CircuitPython changes a pin from <code>False</code> to <code>True</code>. Everything else—the message, lookup table, loops, and pauses—is the same idea.</p>
         <ul class="timing-list">
           <li><span class="timing-mark">·</span><span>LED on for one timing unit</span></li>
@@ -580,7 +580,7 @@
       <article class="card code-card">
         <div class="code-head">
           <div>
-            <p class="eyebrow">Nano version</p>
+            <p class="eyebrow">Pico version</p>
             <h2>Matching CircuitPython</h2>
           </div>
           <button class="copy-button" id="copyButton" type="button">Copy code</button>
@@ -591,7 +591,7 @@
 
     <footer>
       <span>No hardware required for this simulation.</span>
-      <span>When you're ready, save the matching program as <code>code.py</code> on the Nano.</span>
+      <span>When you're ready, save the matching program as <code>code.py</code> on the Pico.</span>
     </footer>
   </main>
 
@@ -711,7 +711,8 @@
 import board
 import digitalio
 
-led = digitalio.DigitalInOut(board.LED)
+# External LED on GP14 (physical pin 19)
+led = digitalio.DigitalInOut(board.GP14)
 led.direction = digitalio.Direction.OUTPUT
 
 UNIT = ${Number(speedInput.value) / 1000}
