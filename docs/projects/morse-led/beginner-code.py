@@ -10,13 +10,34 @@ led.direction = digitalio.Direction.OUTPUT
 UNIT = 0.2
 MESSAGE = "KARINA"
 
-# Only the letters needed to spell KARINA are included for now.
+# Full Morse alphabet, kept as a dictionary for easy lookup.
 MORSE = {
     "A": ".-",
+    "B": "-...",
+    "C": "-.-.",
+    "D": "-..",
+    "E": ".",
+    "F": "..-.",
+    "G": "--.",
+    "H": "....",
     "I": "..",
+    "J": ".---",
     "K": "-.-",
+    "L": ".-..",
+    "M": "--",
     "N": "-.",
-    "R": ".-."
+    "O": "---",
+    "P": ".--.",
+    "Q": "--.-",
+    "R": ".-.",
+    "S": "...",
+    "T": "-",
+    "U": "..-",
+    "V": "...-",
+    "W": ".--",
+    "X": "-..-",
+    "Y": "-.--",
+    "Z": "--.."
 }
 
 
