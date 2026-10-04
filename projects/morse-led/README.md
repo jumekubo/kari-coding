@@ -2,6 +2,8 @@
 
 This project demonstrates how Morse-code timing maps to an LED controlled by CircuitPython.
 
+The generated program targets a Raspberry Pi Pico-family board with an external LED connected to `board.GP14`. Use a current-limiting resistor in series with the LED.
+
 The simulator:
 
 - translates letters and numbers into Morse code;
