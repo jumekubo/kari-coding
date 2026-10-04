@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore Morse code with a virtual LED and see the matching CircuitPython program.">
+  <title>Kari's Morse Lab</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Ccircle cx='22' cy='32' r='8' fill='%23f8df72'/%3E%3Crect x='36' y='28' width='18' height='8' rx='4' fill='%235eead4'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f7f8fc;
+      --muted: #a8b2c4;
+      --panel: rgba(19, 29, 49, .86);
+      --panel-deep: #0d1729;
+      --line: rgba(159, 176, 206, .2);
+      --cyan: #5eead4;
+      --cyan-deep: #0f766e;
+      --amber: #f8df72;
+      --amber-hot: #fff6bd;
+      --coral: #fb7185;
+      --bg: #07101e;
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { min-height: 100%; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(18, 133, 126, .23), transparent 29rem),
+        radial-gradient(circle at 96% 92%, rgba(245, 158, 11, .12), transparent 27rem),
+        var(--bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      opacity: .14;
+      background-image:
+        linear-gradient(rgba(94, 234, 212, .18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(94, 234, 212, .18) 1px, transparent 1px);
+      background-size: 36px 36px;
+      mask-image: linear-gradient(to bottom, black, transparent 82%);
+    }
+
+    button, input { font: inherit; }
+
+    button { touch-action: manipulation; }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      color: var(--cyan);
+      font: 700 .78rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.35rem);
+      line-height: 1;
+      letter-spacing: -.055em;
+    }
+
+    .header-note {
+      max-width: 31rem;
+      margin: 0;
+      color: var(--muted);
+      font-size: .98rem;
+      text-align: right;
+    }
+
+    .simulator {
+      display: grid;
+      grid-template-columns: minmax(0, 1.34fr) minmax(310px, .66fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .25);
+      backdrop-filter: blur(18px);
+    }
+
+    .workbench {
+      min-height: 480px;
+      padding: clamp(22px, 4vw, 40px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .workbench::after {
+      content: "";
+      position: absolute;
+      width: 330px;
+      height: 330px;
+      border: 1px solid rgba(94, 234, 212, .08);
+      border-radius: 50%;
+      top: -180px;
+      right: -110px;
+      box-shadow: 0 0 0 34px rgba(94, 234, 212, .025), 0 0 0 68px rgba(94, 234, 212, .02);
+      pointer-events: none;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+
+    .status.playing .status-dot {
+      background: var(--cyan);
+      box-shadow: 0 0 14px var(--cyan);
+    }
+
+    .unit-readout {
+      color: var(--muted);
+      font: .8rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .led-stage {
+      display: grid;
+      place-items: center;
+      padding: 38px 0 30px;
+      position: relative;
+    }
+
+    .led-glow {
+      width: clamp(142px, 23vw, 214px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle, rgba(248, 223, 114, 0), transparent 70%);
+      transition: background 60ms ease;
+    }
+
+    .led-glow.on {
+      background: radial-gradient(circle, rgba(248, 223, 114, .42), rgba(248, 223, 114, .11) 42%, transparent 70%);
+    }
+
+    .led {
+      width: 38%;
+      aspect-ratio: 1;
+      border-radius: 50% 50% 45% 45%;
+      position: relative;
+      border: 3px solid rgba(255, 255, 255, .16);
+      background: radial-gradient(circle at 34% 28%, #727989, #30394b 48%, #131c2d 76%);
+      box-shadow: inset -8px -12px 18px rgba(0, 0, 0, .35), 0 14px 18px rgba(0, 0, 0, .35);
+      transition: background 60ms ease, box-shadow 60ms ease, transform 60ms ease;
+    }
+
+    .led::before,
+    .led::after {
+      content: "";
+      position: absolute;
+      top: 95%;
+      width: 4px;
+      height: 72px;
+      background: linear-gradient(#cbd5e1, #5d687b);
+      border-radius: 0 0 3px 3px;
+      z-index: -1;
+    }
+
+    .led::before { left: 27%; }
+    .led::after { right: 27%; height: 58px; }
+
+    .led-glow.on .led {
+      transform: scale(1.035);
+      border-color: rgba(255, 255, 255, .72);
+      background: radial-gradient(circle at 34% 28%, white 0 7%, var(--amber-hot) 21%, var(--amber) 49%, #f59e0b 83%);
+      box-shadow: inset -8px -12px 18px rgba(198, 112, 14, .26), 0 0 22px var(--amber), 0 0 54px rgba(248, 223, 114, .6);
+    }
+
+    .now-playing {
+      min-height: 72px;
+      text-align: center;
+    }
+
+    .current-letter {
+      display: block;
+      min-height: 1.2em;
+      font-size: clamp(2.7rem, 7vw, 5rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.04em;
+    }
+
+    .current-symbol {
+      display: block;
+      margin-top: 8px;
+      color: var(--amber);
+      font: 700 1rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: .12em;
+    }
+
+    .controls {
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 23px;
+    }
+
+    .field label,
+    .speed-head label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 15px;
+      color: var(--ink);
+      background: #091323;
+      outline: none;
+      font-size: 1.12rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(94, 234, 212, .14);
+    }
+
+    .speed-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .speed-value {
+      color: var(--cyan);
+      font: 700 .86rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+
+    .button {
+      min-height: 48px;
+      border: 0;
+      border-radius: 14px;
+      padding: 0 20px;
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform 120ms ease, background 120ms ease;
+    }
+
+    .button:hover { transform: translateY(-1px); }
+    .button:active { transform: translateY(0); }
+    .button:focus-visible { outline: 3px solid rgba(94, 234, 212, .45); outline-offset: 2px; }
+
+    .primary { color: #042521; background: var(--cyan); }
+    .primary:hover { background: #86f3e3; }
+
+    .secondary {
+      color: var(--ink);
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .045);
+    }
+
+    .translation {
+      min-height: 73px;
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #091323;
+      color: var(--cyan);
+      font: 700 1rem/1.8 ui-monospace, SFMono-Regular, Menlo, monospace;
+      overflow-wrap: anywhere;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .legend-item {
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .legend-item strong { display: block; color: var(--ink); font-size: .84rem; }
+
+    .timeline-card {
+      grid-column: 1 / -1;
+      padding: 24px 26px 27px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    h2 { margin: 0; font-size: 1.1rem; letter-spacing: -.02em; }
+
+    .section-note { margin: 0; color: var(--muted); font-size: .83rem; }
+
+    .timeline {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 4px 2px 10px;
+      scrollbar-color: var(--cyan-deep) transparent;
+    }
+
+    .letter-card {
+      min-width: 98px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #0a1526;
+      transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+    }
+
+    .letter-card.active {
+      border-color: var(--amber);
+      background: rgba(248, 223, 114, .08);
+      transform: translateY(-2px);
+    }
+
+    .timeline-letter { display: block; color: var(--muted); font-size: .73rem; font-weight: 800; }
+
+    .timeline-code {
+      display: flex;
+      gap: 7px;
+      margin-top: 7px;
+      font: 800 1.23rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .morse-symbol { color: #718096; }
+    .morse-symbol.active { color: var(--amber); text-shadow: 0 0 12px rgba(248, 223, 114, .7); }
+
+    .learning-grid {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .explain { padding: 26px; }
+    .explain p { margin: 10px 0 0; color: var(--muted); }
+
+    .timing-list {
+      list-style: none;
+      padding: 0;
+      margin: 22px 0 0;
+      display: grid;
+      gap: 11px;
+    }
+
+    .timing-list li {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+    }
+
+    .timing-mark {
+      color: var(--amber);
+      font: 800 1.15rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .code-card { overflow: hidden; }
+
+    .code-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 17px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .copy-button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 7px 11px;
+      color: var(--ink);
+      background: rgba(255, 255, 255, .045);
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 700;
+    }
+
+    pre {
+      max-height: 415px;
+      margin: 0;
+      padding: 21px;
+      overflow: auto;
+      color: #d8e0ec;
+      background: #08111f;
+      font: .82rem/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      tab-size: 4;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: .82rem;
+    }
+
+    @media (max-width: 800px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .header-note { text-align: left; }
+      .simulator, .learning-grid { grid-template-columns: 1fr; }
+      .timeline-card { grid-column: auto; }
+      .workbench { min-height: 430px; }
+    }
+
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 20px, 1180px); padding-top: 20px; }
+      .controls, .timeline-card, .explain { padding: 20px; }
+      .workbench { padding: 22px 18px 28px; }
+      .legend { grid-template-columns: 1fr; }
+      .section-head, footer { align-items: flex-start; flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <p class="eyebrow">CircuitPython playground</p>
+        <h1>Kari's Morse Lab</h1>
+      </div>
+      <p class="header-note">See how dots, dashes, and pauses become a blinking LED—before connecting a single wire.</p>
+    </header>
+
+    <section class="simulator" aria-label="Morse code simulator">
+      <article class="card workbench">
+        <div class="status-row">
+          <div class="status" id="status"><span class="status-dot"></span><span id="statusText">Ready</span></div>
+          <span class="unit-readout" id="unitReadout">1 unit = 200 ms</span>
+        </div>
+
+        <div class="led-stage" aria-live="polite">
+          <div class="led-glow" id="ledGlow"><div class="led" aria-label="Virtual LED"></div></div>
+        </div>
+
+        <div class="now-playing">
+          <span class="current-letter" id="currentLetter">KARINA</span>
+          <span class="current-symbol" id="currentSymbol">Press Start</span>
+        </div>
+      </article>
+
+      <aside class="card controls">
+        <div class="field">
+          <label for="message">Message</label>
+          <input id="message" type="text" value="KARINA" maxlength="24" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div>
+          <div class="speed-head">
+            <label for="speed">Timing unit</label>
+            <span class="speed-value" id="speedValue">200 ms</span>
+          </div>
+          <input id="speed" type="range" min="80" max="500" step="20" value="200">
+        </div>
+
+        <div class="button-row">
+          <button class="button primary" id="playButton" type="button">Start signal</button>
+          <button class="button secondary" id="resetButton" type="button">Reset</button>
+        </div>
+
+        <div>
+          <p class="eyebrow">Translation</p>
+          <div class="translation" id="translation" aria-live="polite">-.- &nbsp; .- &nbsp; .-. &nbsp; .. &nbsp; -. &nbsp; .-</div>
+        </div>
+
+        <div class="legend" aria-label="Timing legend">
+          <div class="legend-item"><strong>Dot ·</strong>1 unit on</div>
+          <div class="legend-item"><strong>Dash —</strong>3 units on</div>
+          <div class="legend-item"><strong>Letter gap</strong>3 units off</div>
+          <div class="legend-item"><strong>Word gap</strong>7 units off</div>
+        </div>
+      </aside>
+
+      <article class="card timeline-card">
+        <div class="section-head">
+          <h2>Signal timeline</h2>
+          <p class="section-note">The active symbol follows the virtual LED.</p>
+        </div>
+        <div class="timeline" id="timeline"></div>
+      </article>
+    </section>
+
+    <section class="learning-grid">
+      <article class="card explain">
+        <p class="eyebrow">How it maps to hardware</p>
+        <h2>The simulator and Nano use the same timing</h2>
+        <p>The browser changes a circle from dark to bright. CircuitPython changes a pin from <code>False</code> to <code>True</code>. Everything else—the message, lookup table, loops, and pauses—is the same idea.</p>
+        <ul class="timing-list">
+          <li><span class="timing-mark">·</span><span>LED on for one timing unit</span></li>
+          <li><span class="timing-mark">—</span><span>LED on for three timing units</span></li>
+          <li><span class="timing-mark">A → R</span><span>LED off for three timing units</span></li>
+        </ul>
+      </article>
+
+      <article class="card code-card">
+        <div class="code-head">
+          <div>
+            <p class="eyebrow">Nano version</p>
+            <h2>Matching CircuitPython</h2>
+          </div>
+          <button class="copy-button" id="copyButton" type="button">Copy code</button>
+        </div>
+        <pre><code id="codeOutput"></code></pre>
+      </article>
+    </section>
+
+    <footer>
+      <span>No hardware required for this simulation.</span>
+      <span>When you're ready, save the matching program as <code>code.py</code> on the Nano.</span>
+    </footer>
+  </main>
+
+  <script>
+    const MORSE = {
+      A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.',
+      G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..',
+      M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.',
+      S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-',
+      Y: '-.--', Z: '--..',
+      0: '-----', 1: '.----', 2: '..---', 3: '...--', 4: '....-',
+      5: '.....', 6: '-....', 7: '--...', 8: '---..', 9: '----.'
+    };
+
+    const messageInput = document.querySelector('#message');
+    const speedInput = document.querySelector('#speed');
+    const speedValue = document.querySelector('#speedValue');
+    const unitReadout = document.querySelector('#unitReadout');
+    const playButton = document.querySelector('#playButton');
+    const resetButton = document.querySelector('#resetButton');
+    const ledGlow = document.querySelector('#ledGlow');
+    const status = document.querySelector('#status');
+    const statusText = document.querySelector('#statusText');
+    const currentLetter = document.querySelector('#currentLetter');
+    const currentSymbol = document.querySelector('#currentSymbol');
+    const translation = document.querySelector('#translation');
+    const timeline = document.querySelector('#timeline');
+    const codeOutput = document.querySelector('#codeOutput');
+    const copyButton = document.querySelector('#copyButton');
+
+    let events = [];
+    let eventIndex = 0;
+    let timer = null;
+    let playing = false;
+
+    function cleanMessage(value) {
+      return value.toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/\s+/g, ' ').trimStart();
+    }
+
+    function wordsFor(value) {
+      return cleanMessage(value).trim().split(' ').filter(Boolean);
+    }
+
+    function makeEvents(value) {
+      const output = [];
+      const words = wordsFor(value);
+
+      words.forEach((word, wordIndex) => {
+        [...word].forEach((letter, letterIndex) => {
+          [...MORSE[letter]].forEach((symbol, symbolIndex, symbols) => {
+            output.push({ on: true, units: symbol === '.' ? 1 : 3, letter, symbol, letterIndex, wordIndex, symbolIndex });
+            if (symbolIndex < symbols.length - 1) {
+              output.push({ on: false, units: 1, letter, symbol: 'element gap', letterIndex, wordIndex, symbolIndex });
+            }
+          });
+
+          if (letterIndex < word.length - 1) {
+            output.push({ on: false, units: 3, letter, symbol: 'letter gap', letterIndex, wordIndex, symbolIndex: -1 });
+          }
+        });
+
+        if (wordIndex < words.length - 1) {
+          output.push({ on: false, units: 7, letter: ' ', symbol: 'word gap', letterIndex: -1, wordIndex, symbolIndex: -1 });
+        }
+      });
+
+      return output;
+    }
+
+    function morseText(value) {
+      return wordsFor(value)
+        .map(word => [...word].map(letter => MORSE[letter]).join('   '))
+        .join('       ');
+    }
+
+    function renderTimeline() {
+      timeline.innerHTML = '';
+      const words = wordsFor(messageInput.value);
+
+      words.forEach((word, wordIndex) => {
+        [...word].forEach((letter, letterIndex) => {
+          const card = document.createElement('div');
+          card.className = 'letter-card';
+          card.dataset.word = wordIndex;
+          card.dataset.letter = letterIndex;
+          card.innerHTML = `<span class="timeline-letter">${letter}</span><span class="timeline-code">${[...MORSE[letter]].map((symbol, symbolIndex) => `<span class="morse-symbol" data-symbol="${symbolIndex}">${symbol === '.' ? '•' : '—'}</span>`).join('')}</span>`;
+          timeline.appendChild(card);
+        });
+
+        if (wordIndex < words.length - 1) {
+          const divider = document.createElement('div');
+          divider.className = 'letter-card';
+          divider.innerHTML = '<span class="timeline-letter">word gap</span><span class="timeline-code">/</span>';
+          timeline.appendChild(divider);
+        }
+      });
+    }
+
+    function setTimelineActive(event) {
+      document.querySelectorAll('.letter-card.active, .morse-symbol.active').forEach(item => item.classList.remove('active'));
+      if (!event || event.letter === ' ') return;
+
+      const card = document.querySelector(`.letter-card[data-word="${event.wordIndex}"][data-letter="${event.letterIndex}"]`);
+      if (!card) return;
+      card.classList.add('active');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+      if (event.on) {
+        const symbol = card.querySelector(`[data-symbol="${event.symbolIndex}"]`);
+        if (symbol) symbol.classList.add('active');
+      }
+    }
+
+    function generatedCode() {
+      const message = cleanMessage(messageInput.value).trim() || 'KARINA';
+      return `import time
+import board
+import digitalio
+
+led = digitalio.DigitalInOut(board.LED)
+led.direction = digitalio.Direction.OUTPUT
+
+UNIT = ${Number(speedInput.value) / 1000}
+MESSAGE = "${message}"
+
+MORSE = {
+    "A": ".-", "B": "-...", "C": "-.-.", "D": "-..",
+    "E": ".", "F": "..-.", "G": "--.", "H": "....",
+    "I": "..", "J": ".---", "K": "-.-", "L": ".-..",
+    "M": "--", "N": "-.", "O": "---", "P": ".--.",
+    "Q": "--.-", "R": ".-.", "S": "...", "T": "-",
+    "U": "..-", "V": "...-", "W": ".--", "X": "-..-",
+    "Y": "-.--", "Z": "--.."
+}
+
+def flash(symbol):
+    led.value = True
+    time.sleep(UNIT if symbol == "." else 3 * UNIT)
+    led.value = False
+
+def send_word(word):
+    for letter_index, letter in enumerate(word):
+        pattern = MORSE[letter]
+        for symbol_index, symbol in enumerate(pattern):
+            flash(symbol)
+            if symbol_index < len(pattern) - 1:
+                time.sleep(UNIT)
+        if letter_index < len(word) - 1:
+            time.sleep(3 * UNIT)
+
+while True:
+    for word_index, word in enumerate(MESSAGE.split()):
+        send_word(word)
+        if word_index < len(MESSAGE.split()) - 1:
+            time.sleep(7 * UNIT)
+    time.sleep(7 * UNIT)`;
+    }
+
+    function updateContent() {
+      const cleaned = cleanMessage(messageInput.value);
+      if (messageInput.value !== cleaned) messageInput.value = cleaned;
+      translation.textContent = morseText(cleaned) || 'Enter a message';
+      speedValue.textContent = `${speedInput.value} ms`;
+      unitReadout.textContent = `1 unit = ${speedInput.value} ms`;
+      codeOutput.textContent = generatedCode();
+      renderTimeline();
+      if (!playing) {
+        currentLetter.textContent = cleaned.trim() || '—';
+        currentSymbol.textContent = 'Press Start';
+      }
+    }
+
+    function showEvent(event) {
+      ledGlow.classList.toggle('on', event.on);
+      currentLetter.textContent = event.letter === ' ' ? 'SPACE' : event.letter;
+      currentSymbol.textContent = event.on
+        ? `${event.symbol === '.' ? 'DOT' : 'DASH'}  ${event.symbol === '.' ? '•' : '—'}`
+        : event.symbol.toUpperCase();
+      setTimelineActive(event);
+    }
+
+    function scheduleNext() {
+      if (!playing) return;
+      if (eventIndex >= events.length) {
+        playing = false;
+        ledGlow.classList.remove('on');
+        status.classList.remove('playing');
+        statusText.textContent = 'Complete';
+        currentLetter.textContent = cleanMessage(messageInput.value).trim() || '—';
+        currentSymbol.textContent = 'Signal complete';
+        playButton.textContent = 'Play again';
+        setTimelineActive(null);
+        return;
+      }
+
+      const event = events[eventIndex];
+      showEvent(event);
+      timer = window.setTimeout(() => {
+        eventIndex += 1;
+        scheduleNext();
+      }, event.units * Number(speedInput.value));
+    }
+
+    function playPause() {
+      if (playing) {
+        playing = false;
+        clearTimeout(timer);
+        ledGlow.classList.remove('on');
+        status.classList.remove('playing');
+        statusText.textContent = 'Paused';
+        playButton.textContent = 'Resume';
+        return;
+      }
+
+      const message = cleanMessage(messageInput.value).trim();
+      if (!message) {
+        messageInput.focus();
+        return;
+      }
+
+      if (eventIndex >= events.length || events.length === 0) {
+        events = makeEvents(message);
+        eventIndex = 0;
+      }
+
+      playing = true;
+      status.classList.add('playing');
+      statusText.textContent = 'Transmitting';
+      playButton.textContent = 'Pause';
+      scheduleNext();
+    }
+
+    function reset() {
+      clearTimeout(timer);
+      playing = false;
+      events = makeEvents(messageInput.value);
+      eventIndex = 0;
+      ledGlow.classList.remove('on');
+      status.classList.remove('playing');
+      statusText.textContent = 'Ready';
+      currentLetter.textContent = cleanMessage(messageInput.value).trim() || '—';
+      currentSymbol.textContent = 'Press Start';
+      playButton.textContent = 'Start signal';
+      setTimelineActive(null);
+    }
+
+    messageInput.addEventListener('input', () => { reset(); updateContent(); });
+    speedInput.addEventListener('input', updateContent);
+    playButton.addEventListener('click', playPause);
+    resetButton.addEventListener('click', reset);
+
+    copyButton.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(codeOutput.textContent);
+        copyButton.textContent = 'Copied';
+        window.setTimeout(() => { copyButton.textContent = 'Copy code'; }, 1400);
+      } catch {
+        copyButton.textContent = 'Select and copy';
+      }
+    });
+
+    updateContent();
+    events = makeEvents(messageInput.value);
+  </script>
+</body>
+</html>
