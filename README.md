@@ -2,9 +2,9 @@
 
 A growing collection of coding experiments and learning projects for Kari and family.
 
-## Live project
+## Live website
 
-[Open Kari's Morse Lab](https://karis-morse-lab.jumekubo.chatgpt.site/)
+[Open the Kari Coding project hub](https://jumekubo.github.io/kari-coding/)
 
 ## Projects
 
@@ -12,7 +12,7 @@ A growing collection of coding experiments and learning projects for Kari and fa
 
 An interactive browser project that translates a message into Morse code, blinks a virtual LED, and generates matching CircuitPython code for Kari's Raspberry Pi Pico setup.
 
-Open `projects/morse-led/index.html` in a browser. No installation or build step is needed. After GitHub Pages is enabled, the project will also be available at `https://jumekubo.github.io/kari-coding/projects/morse-led/`.
+Open `projects/morse-led/index.html` locally, or [open the live Morse LED simulator](https://jumekubo.github.io/kari-coding/projects/morse-led/). No installation or build step is needed.
 
 Future projects can live alongside it:
 
